@@ -1,9 +1,13 @@
 -module(iso8601).
 
--export([add_time/4,
-         format/1,
-         parse/1,
-         parse_exact/1]).
+-export([
+    add_time/4,
+    format/1,
+    extended/0,
+    extended/1,
+    parse/1,
+    parse_exact/1
+]).
 
 -export_types([timestamp/0]).
 -define(MIDNIGHT, {0,0,0}).
@@ -24,7 +28,7 @@ add_time(Datetime, H, M, S) ->
     apply_offset(Datetime, H, M, S).
 
 -spec format (calendar:datetime() | timestamp()) -> binary().
-%% @doc Convert a `util:timestamp()' or a calendar-style `{date(), time()}'
+%% @doc Convert a `os:timestamp()' or a calendar-style `{date(), time()}'
 %% tuple to an ISO 8601 formatted string. Note that this function always
 %% returns a string with no offset (i.e., ending in "Z").
 format({_,_,_}=Timestamp) ->
@@ -36,6 +40,27 @@ format({{Y,Mo,D}, {H,Mn,S}}) when is_float(S) ->
 format({{Y,Mo,D}, {H,Mn,S}}) ->
     FmtStr = "~4.10.0B-~2.10.0B-~2.10.0BT~2.10.0B:~2.10.0B:~2.10.0BZ",
     IsoStr = io_lib:format(FmtStr, [Y, Mo, D, H, Mn, S]),
+    list_to_binary(IsoStr).
+
+-spec extended () -> binary().
+%% @doc Convert a `os:timestamp()` to an ISO 8601 extended formatted
+%% (i.e., YYYY-MM-DDTHH:mm:ss.sssZ) string.
+extended() ->
+    {_, _, MicroSecs} = TimeStamp = os:timestamp(),
+    MilliSecs = MicroSecs div 1000,
+    {{Year, Month, Day}, {Hour, Minute, Second}} = calendar:now_to_datetime(TimeStamp),
+    FmtStr = "~4.10.0B-~2.10.0B-~2.10.0BT~2.10.0B:~2.10.0B:~2.10.0B.~3.10.0BZ",
+    IsoStr = io_lib:format(FmtStr, [Year, Month, Day, Hour, Minute, Second, MilliSecs]),
+    list_to_binary(IsoStr).
+
+-spec extended (timestamp()) -> binary().
+%% @doc Convert a UTC time to an ISO 8601 extended formatted
+%% (i.e., YYYY-MM-DDTHH:mm:ss.sssZ) string.
+extended({_,_,MicroSecs}=TimeStamp) ->
+    MilliSecs = MicroSecs div 1000,
+    {{Year, Month, Day}, {Hour, Minute, Second}} = calendar:now_to_datetime(TimeStamp),
+    FmtStr = "~4.10.0B-~2.10.0B-~2.10.0BT~2.10.0B:~2.10.0B:~2.10.0B.~3.10.0BZ",
+    IsoStr = io_lib:format(FmtStr, [Year, Month, Day, Hour, Minute, Second, MilliSecs]),
     list_to_binary(IsoStr).
 
 -spec parse (iodata()) -> calendar:datetime().
