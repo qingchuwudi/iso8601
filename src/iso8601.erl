@@ -2,6 +2,7 @@
 
 -export([
     add_time/4,
+    format/0,
     format/1,
     extended/0,
     extended/1,
@@ -26,6 +27,16 @@
 %% @doc Add some time to the supplied `calendar:datetime()'.
 add_time(Datetime, H, M, S) ->
     apply_offset(Datetime, H, M, S).
+
+-spec format () -> binary().
+%% @doc Convert a `os:timestamp()` to an ISO 8601 formatted string. 
+%% Note that this function always returns a string with no offset
+%% (i.e., ending in "Z").
+format() ->
+    {{Year, Month, Day}, {Hour, Minute, Second}} = calendar:universal_time(),
+    FmtStr = "~4.10.0B-~2.10.0B-~2.10.0BT~2.10.0B:~2.10.0B:~2.10.0BZ",
+    IsoStr = io_lib:format(FmtStr, [Year, Month, Day, Hour, Minute, Second]),
+    list_to_binary(IsoStr).
 
 -spec format (calendar:datetime() | timestamp()) -> binary().
 %% @doc Convert a `os:timestamp()' or a calendar-style `{date(), time()}'
